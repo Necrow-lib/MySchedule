@@ -33,10 +33,15 @@ MainWindow::MainWindow(QWidget *parent)
     m_reminderThread->start();
 }
 
-//退出程序：待实现🔴 
+//退出程序 
 MainWindow::~MainWindow()
 {
-
+    if (m_reminderThread) {
+        m_reminderThread->stop();
+        m_reminderThread->quit();
+        m_reminderThread->wait();
+    }
+    delete ui;
 }
 
 //登陆/注册页
@@ -149,33 +154,81 @@ void MainWindow::setupMainPage()
 
 
 //登陆/注册页
-//登陆：未实现🔴
 void MainWindow::onLoginClicked()
 {
-
+    QString user = m_usernameEdit->text().trimmed();
+    QString pass = m_passwordEdit->text();
+    if (user.isEmpty() || pass.isEmpty()) {
+        m_loginStatus->setText("用户名和密码不能为空");
+        return;
+    }
+    if (m_accountMgr->login(user, pass)) {
+        m_loginStatus->setText("");
+        switchToMainPage(user);
+    } else {
+        m_loginStatus->setText("登录失败，请检查用户名或密码");
+    }
 }
 
-//注册：未实现🔴
 void MainWindow::onRegisterClicked()
 {
-
+    QString user = m_usernameEdit->text().trimmed();
+    QString pass = m_passwordEdit->text();
+    if (user.isEmpty() || pass.isEmpty()) {
+        m_loginStatus->setText("用户名和密码不能为空");
+        return;
+    }
+    if (m_accountMgr->registerUser(user, pass)) {
+        m_loginStatus->setText("注册成功，请登录");
+        m_passwordEdit->clear();
+    } else {
+        m_loginStatus->setText("注册失败：用户名已存在");
+    }
 }
 
-//退出登录：未实现🔴
+//退出登录
 void MainWindow::onLogoutClicked()
 {
+    if (m_reminderThread) {
+        m_reminderThread->stop();
+        m_reminderThread->quit();
+        m_reminderThread->wait();
+    }
+    m_currentUser.clear();
+    m_taskMgr->setCurrentUser("");
+    m_stackedWidget->setCurrentWidget(m_loginPage);
+    m_usernameEdit->clear();
+    m_passwordEdit->clear();
+    m_loginStatus->clear();
 
+    // 重新启动提醒线程，无用户不检查
+    m_reminderThread = new ReminderThread(nullptr, this);
+    connect(m_reminderThread, &ReminderThread::remind, this, &MainWindow::showReminder);
+    m_reminderThread->start();
 }
 
-//进入主界面：未实现🔴
+//进入主界面
 void MainWindow::switchToMainPage(const QString &username)
 {
+    m_currentUser = username;
+    m_userLabel->setText("当前用户: " + username);
+    m_taskMgr->loadTasks(username);
+    m_stackedWidget->setCurrentWidget(m_mainPage);
 
+    // 重新设置提醒线程
+    if (m_reminderThread) {
+        m_reminderThread->stop();
+        m_reminderThread->quit();
+        m_reminderThread->wait();
+        delete m_reminderThread;
+    }
+    m_reminderThread = new ReminderThread(m_taskMgr, this);
+    connect(m_reminderThread, &ReminderThread::remind, this, &MainWindow::showReminder);
+    m_reminderThread->start();
+
+    // 默认显示今天任务
+    loadTableForDate(QDate::currentDate());
 }
-
-
-
-
 
 
 
