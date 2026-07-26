@@ -95,22 +95,34 @@ void TaskManager::saveTasks() {
 // ---------- 内部校验 ----------
 // 以下两个函数都在锁内调用，不需要额外加锁。
 
+// 将时间截断到分钟精度（去掉秒和毫秒）
+// 为什么要截断：GUI 的 QDateTimeEdit 包含秒数，用户两次选"14:00"
+// 可能实际值是 14:00:23 和 14:00:47，直接比较会认为不同。
+// 作业要求精确到分钟，截断后再比较才符合要求。
+static QDateTime toMinutePrecision(const QDateTime &dt) {
+    QDate d = dt.date();
+    QTime t = dt.time();
+    QTime truncated(t.hour(), t.minute());   // 只保留时和分
+    return QDateTime(d, truncated);
+}
+
 // 检查开始时间冲突
-// 作业要求：每个任务的开始时间不能相同（精确到分钟）
 bool TaskManager::hasTimeConflict(const Task &task, int excludeId) const {
+    QDateTime taskMin = toMinutePrecision(task.startTime);
     for (const auto &t : m_tasks) {
-        if (t.id == excludeId) continue;                            // 跳过自身
-        if (t.startTime == task.startTime) return true;             // 时间冲突
+        if (t.id == excludeId) continue;
+        if (toMinutePrecision(t.startTime) == taskMin) return true;
     }
     return false;
 }
 
 // 检查名称+开始时间的唯一性
-// 作业要求：任务名称+开始时间必须唯一
 bool TaskManager::hasNameTimeConflict(const Task &task, int excludeId) const {
+    QDateTime taskMin = toMinutePrecision(task.startTime);
     for (const auto &t : m_tasks) {
         if (t.id == excludeId) continue;
-        if (t.name == task.name && t.startTime == task.startTime) return true;
+        if (t.name == task.name && toMinutePrecision(t.startTime) == taskMin)
+            return true;
     }
     return false;
 }

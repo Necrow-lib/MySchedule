@@ -8,6 +8,8 @@
 #include <QHeaderView>
 #include <QMessageBox>
 #include <QDate>
+#include <QTime>
+#include <QDateTime>
 
 
 MainWindow::MainWindow(QWidget *parent)
@@ -245,8 +247,13 @@ void MainWindow::onAddTaskClicked()
         QMessageBox::warning(this, "错误", "任务名称不能为空");
         return;
     }
-    task.startTime  = m_startTimeEdit->dateTime();
-    task.remindTime = m_remindTimeEdit->dateTime();
+    // 从控件取时间，截断秒数只保留到分钟（作业要求精确到分钟）
+    QDateTime rawStart = m_startTimeEdit->dateTime();
+    task.startTime = QDateTime(rawStart.date(),
+                     QTime(rawStart.time().hour(), rawStart.time().minute()));
+    QDateTime rawRemind = m_remindTimeEdit->dateTime();
+    task.remindTime = QDateTime(rawRemind.date(),
+                      QTime(rawRemind.time().hour(), rawRemind.time().minute()));
     task.priority   = static_cast<Priority>(m_priorityCombo->currentIndex());
     task.category   = static_cast<Category>(m_categoryCombo->currentIndex());
 
