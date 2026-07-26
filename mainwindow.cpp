@@ -234,32 +234,115 @@ void MainWindow::switchToMainPage(const QString &username)
 
 //主页
 //添加任务：未实现🔴
+// 添加任务：从界面控件读取数据，构建Task对象，调用TaskManager
 void MainWindow::onAddTaskClicked()
 {
+    if (m_currentUser.isEmpty()) return;
 
+    Task task;
+    task.name = m_taskNameEdit->text().trimmed();
+    if (task.name.isEmpty()) {
+        QMessageBox::warning(this, "错误", "任务名称不能为空");
+        return;
+    }
+    task.startTime  = m_startTimeEdit->dateTime();
+    task.remindTime = m_remindTimeEdit->dateTime();
+    task.priority   = static_cast<Priority>(m_priorityCombo->currentIndex());
+    task.category   = static_cast<Category>(m_categoryCombo->currentIndex());
+
+    if (m_taskMgr->addTask(task)) {
+        clearTaskInput();
+        loadTableForDate(m_dateEdit->date());
+    } else {
+        QMessageBox::warning(this, "错误",
+            "添加失败：任务的开始时间不能与其他任务相同，且任务名称+开始时间必须唯一");
+    }
 }
 
 //删除任务：未实现🔴
+// 删除任务：获取表格选中行的任务ID，调用TaskManager删除
 void MainWindow::onDeleteTaskClicked()
 {
-
+    int row = m_taskTable->currentRow();
+    if (row < 0) {
+        QMessageBox::information(this, "提示", "请先选中要删除的行");
+        return;
+    }
+    int id = m_taskTable->item(row, 0)->text().toInt();
+    if (m_taskMgr->removeTask(id)) {
+        loadTableForDate(m_dateEdit->date());
+    }
 }
 
 //查询当天任务：未实现🔴
+// 查询当天任务
 void MainWindow::onQueryDayClicked()
 {
-
+    loadTableForDate(m_dateEdit->date());
 }
 
 //查询当月任务：未实现🔴
+// 查询当月任务
 void MainWindow::onQueryMonthClicked()
 {
-
+    QDate d = m_dateEdit->date();
+    loadTableForMonth(d.year(), d.month());
 }
 
 //提醒接收
 //显示提醒：未实现🔴
+// 显示提醒弹窗（由ReminderThread的信号触发）
 void MainWindow::showReminder(const QString &taskName, const QString &timeStr)
 {
+    QMessageBox::information(this, "任务提醒",
+        QString("任务「%1」将在 %2 开始，请做好准备！").arg(taskName, timeStr));
+}
 
+
+// ============================================================
+// 以下为内部辅助函数 — 表格填充与输入清空
+// ============================================================
+
+// 按日期查询并填充任务表格（调用TaskManager::tasksForDate）
+void MainWindow::loadTableForDate(const QDate &date)
+{
+    QVector<Task> tasks = m_taskMgr->tasksForDate(date);
+    m_taskTable->setRowCount(tasks.size());
+    for (int i = 0; i < tasks.size(); ++i) {
+        const Task &t = tasks[i];
+        m_taskTable->setItem(i, 0, new QTableWidgetItem(QString::number(t.id)));
+        m_taskTable->setItem(i, 1, new QTableWidgetItem(t.name));
+        m_taskTable->setItem(i, 2, new QTableWidgetItem(t.startTime.toString("yyyy-MM-dd HH:mm")));
+        m_taskTable->setItem(i, 3, new QTableWidgetItem(priorityToStr(t.priority)));
+        m_taskTable->setItem(i, 4, new QTableWidgetItem(categoryToStr(t.category)));
+        m_taskTable->setItem(i, 5, new QTableWidgetItem(
+            t.remindTime.isValid() ? t.remindTime.toString("yyyy-MM-dd HH:mm") : "无"));
+    }
+}
+
+// 按月份查询并填充任务表格（调用TaskManager::tasksForMonth）
+void MainWindow::loadTableForMonth(int year, int month)
+{
+    QVector<Task> tasks = m_taskMgr->tasksForMonth(year, month);
+    m_taskTable->setRowCount(tasks.size());
+    for (int i = 0; i < tasks.size(); ++i) {
+        const Task &t = tasks[i];
+        m_taskTable->setItem(i, 0, new QTableWidgetItem(QString::number(t.id)));
+        m_taskTable->setItem(i, 1, new QTableWidgetItem(t.name));
+        m_taskTable->setItem(i, 2, new QTableWidgetItem(t.startTime.toString("yyyy-MM-dd HH:mm")));
+        m_taskTable->setItem(i, 3, new QTableWidgetItem(priorityToStr(t.priority)));
+        m_taskTable->setItem(i, 4, new QTableWidgetItem(categoryToStr(t.category)));
+        m_taskTable->setItem(i, 5, new QTableWidgetItem(
+            t.remindTime.isValid() ? t.remindTime.toString("yyyy-MM-dd HH:mm") : "无"));
+    }
+}
+
+// 清空任务录入表单，恢复到默认值
+void MainWindow::clearTaskInput()
+{
+    m_taskNameEdit->clear();
+    m_startTimeEdit->setDateTime(QDateTime::currentDateTime());
+    m_remindTimeEdit->setDateTime(QDateTime::currentDateTime());
+    m_priorityCombo->setCurrentIndex(1);   // 默认"中"
+    m_categoryCombo->setCurrentIndex(2);   // 默认"生活"
 }
