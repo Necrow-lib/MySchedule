@@ -52,6 +52,10 @@ public:
     // 删除后自动保存到文件
     bool removeTask(int id);
 
+    // 根据 ID 修改任务，传入新数据覆盖旧数据
+    // 校验规则同 addTask（排除自身ID）
+    bool updateTask(int id, const Task &newData);
+
     // 根据 ID 查找任务，返回指针（调用者不应长期持有此指针，
     // 因为后续的 addTask/removeTask 可能导致 vector 重新分配内存）
     Task* findTask(int id);

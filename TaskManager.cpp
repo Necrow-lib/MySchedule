@@ -173,6 +173,32 @@ bool TaskManager::removeTask(int id) {
     return found;
 }
 
+bool TaskManager::updateTask(int id, const Task &newData) {
+    // 第一步：加锁校验 + 更新
+    {
+        QMutexLocker locker(&m_mutex);
+
+        // 校验：时间冲突和名称唯一性（排除自身ID）
+        if (hasTimeConflict(newData, id) || hasNameTimeConflict(newData, id))
+            return false;
+
+        // 查找并覆盖
+        for (auto &t : m_tasks) {
+            if (t.id == id) {
+                t.name       = newData.name;
+                t.startTime  = newData.startTime;
+                t.priority   = newData.priority;
+                t.category   = newData.category;
+                t.remindTime = newData.remindTime;
+                break;
+            }
+        }
+    }
+    // 第二步：持久化
+    saveTasks();
+    return true;
+}
+
 Task* TaskManager::findTask(int id) {
     QMutexLocker locker(&m_mutex);      // 加锁保护遍历
     for (auto &t : m_tasks) {

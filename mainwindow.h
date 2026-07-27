@@ -33,6 +33,7 @@ private slots:
     void onLogoutClicked();
     void onAddTaskClicked();
     void onDeleteTaskClicked();
+    void onModifyTaskClicked();   // 修改任务：选中行 → 回填 → 改完保存
     void onQueryDayClicked();
     void onQueryMonthClicked();
     void showReminder(const QString &taskName, const QString &timeStr);
@@ -61,6 +62,7 @@ private:
     QComboBox *m_priorityCombo;
     QComboBox *m_categoryCombo;
     QPushButton *m_addBtn;
+    QPushButton *m_modifyBtn;
     QPushButton *m_deleteBtn;
     QDateEdit *m_dateEdit;
     QPushButton *m_queryDayBtn;
@@ -72,6 +74,7 @@ private:
     TaskManager *m_taskMgr;
     ReminderThread *m_reminderThread;
     QString m_currentUser;
+    int m_editingId = -1;   // 正在修改的任务ID，-1 表示没有在修改
 
     void setupLoginPage();
     void setupMainPage();

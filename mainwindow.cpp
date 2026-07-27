@@ -112,6 +112,7 @@ void MainWindow::setupMainPage()
     m_categoryCombo->addItems({"学习", "娱乐", "生活"});
     m_categoryCombo->setCurrentIndex(2); // 默认生活
     m_addBtn = new QPushButton("添加任务");
+    m_modifyBtn = new QPushButton("修改选中任务");
     m_deleteBtn = new QPushButton("删除选中任务");
 
     addForm->addRow("名称:", m_taskNameEdit);
@@ -121,11 +122,13 @@ void MainWindow::setupMainPage()
     addForm->addRow("分类:", m_categoryCombo);
     QHBoxLayout *btnLayout = new QHBoxLayout;
     btnLayout->addWidget(m_addBtn);
+    btnLayout->addWidget(m_modifyBtn);
     btnLayout->addWidget(m_deleteBtn);
     addForm->addRow(btnLayout);
     mainLayout->addWidget(addGroup);
 
     connect(m_addBtn, &QPushButton::clicked, this, &MainWindow::onAddTaskClicked);
+    connect(m_modifyBtn, &QPushButton::clicked, this, &MainWindow::onModifyTaskClicked);
     connect(m_deleteBtn, &QPushButton::clicked, this, &MainWindow::onDeleteTaskClicked);
 
     QGroupBox *queryGroup = new QGroupBox("查询任务");
@@ -267,6 +270,59 @@ void MainWindow::onAddTaskClicked()
 }
 
 //删除任务：未实现🔴
+// 修改任务：第一次点击把选中行数据回填到输入框，第二次点击保存修改
+void MainWindow::onModifyTaskClicked()
+{
+    int row = m_taskTable->currentRow();
+    if (row < 0) {
+        QMessageBox::information(this, "提示", "请先选中要修改的行");
+        return;
+    }
+    int id = m_taskTable->item(row, 0)->text().toInt();
+
+    // 没在修改状态 → 回填输入框
+    if (m_editingId != id) {
+        m_editingId = id;
+        m_modifyBtn->setText("保存修改");
+
+        Task *t = m_taskMgr->findTask(id);
+        if (!t) return;
+        m_taskNameEdit->setText(t->name);
+        m_startTimeEdit->setDateTime(t->startTime);
+        m_remindTimeEdit->setDateTime(t->remindTime.isValid() ? t->remindTime : QDateTime::currentDateTime());
+        m_priorityCombo->setCurrentIndex(static_cast<int>(t->priority));
+        m_categoryCombo->setCurrentIndex(static_cast<int>(t->category));
+        return;
+    }
+
+    // 已在修改状态 → 保存
+    Task newData;
+    newData.id       = id;
+    newData.name     = m_taskNameEdit->text().trimmed();
+    if (newData.name.isEmpty()) {
+        QMessageBox::warning(this, "错误", "任务名称不能为空");
+        return;
+    }
+    QDateTime rawStart = m_startTimeEdit->dateTime();
+    newData.startTime  = QDateTime(rawStart.date(),
+                         QTime(rawStart.time().hour(), rawStart.time().minute()));
+    QDateTime rawRemind = m_remindTimeEdit->dateTime();
+    newData.remindTime  = QDateTime(rawRemind.date(),
+                          QTime(rawRemind.time().hour(), rawRemind.time().minute()));
+    newData.priority    = static_cast<Priority>(m_priorityCombo->currentIndex());
+    newData.category    = static_cast<Category>(m_categoryCombo->currentIndex());
+
+    if (m_taskMgr->updateTask(id, newData)) {
+        m_editingId = -1;
+        m_modifyBtn->setText("修改选中任务");
+        clearTaskInput();
+        loadTableForDate(m_dateEdit->date());
+    } else {
+        QMessageBox::warning(this, "错误",
+            "修改失败：时间冲突或名称+时间不唯一");
+    }
+}
+
 // 删除任务：获取表格选中行的任务ID，调用TaskManager删除
 void MainWindow::onDeleteTaskClicked()
 {
