@@ -19,6 +19,8 @@ MainWindow::MainWindow(QWidget *parent)
     ui->setupUi(this);
     setWindowTitle("MySchedule日程管理器");
 
+        
+
     m_accountMgr = new AccountManager("data");
     m_taskMgr = new TaskManager("data");
 
@@ -238,7 +240,6 @@ void MainWindow::switchToMainPage(const QString &username)
 
 
 //主页
-//添加任务：未实现🔴
 // 添加任务：从界面控件读取数据，构建Task对象，调用TaskManager
 void MainWindow::onAddTaskClicked()
 {
@@ -269,6 +270,7 @@ void MainWindow::onAddTaskClicked()
     }
 }
 
+<<<<<<< HEAD
 //删除任务：未实现🔴
 // 修改任务：第一次点击把选中行数据回填到输入框，第二次点击保存修改
 void MainWindow::onModifyTaskClicked()
@@ -323,6 +325,8 @@ void MainWindow::onModifyTaskClicked()
     }
 }
 
+=======
+>>>>>>> 592b668 (添加测试程序及音乐提醒功能)
 // 删除任务：获取表格选中行的任务ID，调用TaskManager删除
 void MainWindow::onDeleteTaskClicked()
 {
@@ -337,14 +341,12 @@ void MainWindow::onDeleteTaskClicked()
     }
 }
 
-//查询当天任务：未实现🔴
 // 查询当天任务
 void MainWindow::onQueryDayClicked()
 {
     loadTableForDate(m_dateEdit->date());
 }
 
-//查询当月任务：未实现🔴
 // 查询当月任务
 void MainWindow::onQueryMonthClicked()
 {
@@ -353,10 +355,14 @@ void MainWindow::onQueryMonthClicked()
 }
 
 //提醒接收
-//显示提醒：未实现🔴
 // 显示提醒弹窗（由ReminderThread的信号触发）
 void MainWindow::showReminder(const QString &taskName, const QString &timeStr)
 {
+        // 播放提醒音（异步播放，不阻塞 UI）
+    // 使用完整路径，确保不管从哪个目录启动都能找到
+    QString soundPath = QCoreApplication::applicationDirPath() + "/../sounds/remind.wav";
+    PlaySound((LPCWSTR)soundPath.utf16(), NULL, SND_FILENAME | SND_ASYNC | SND_NODEFAULT);
+
     QMessageBox::information(this, "任务提醒",
         QString("任务「%1」将在 %2 开始，请做好准备！").arg(taskName, timeStr));
 }
