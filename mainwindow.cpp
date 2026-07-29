@@ -10,7 +10,7 @@
 #include <QDate>
 #include <QTime>
 #include <QDateTime>
-
+#include <QCoreApplication>
 
 MainWindow::MainWindow(QWidget *parent)
     : QMainWindow(parent)
@@ -19,25 +19,51 @@ MainWindow::MainWindow(QWidget *parent)
     ui->setupUi(this);
     setWindowTitle("MySchedule日程管理器");
 
-        
+    // 从 UI 文件获取控件指针
+    m_stackedWidget = ui->m_stackedWidget;
+    m_usernameEdit = ui->m_usernameEdit;
+    m_passwordEdit = ui->m_passwordEdit;
+    m_loginBtn = ui->m_loginBtn;
+    m_registerBtn = ui->m_registerBtn;
+    m_loginStatus = ui->m_loginStatus;
+    m_userLabel = ui->m_userLabel;
+    m_logoutBtn = ui->m_logoutBtn;
+    m_taskNameEdit = ui->m_taskNameEdit;
+    m_startTimeEdit = ui->m_startTimeEdit;
+    m_remindTimeEdit = ui->m_remindTimeEdit;
+    m_priorityCombo = ui->m_priorityCombo;
+    m_categoryCombo = ui->m_categoryCombo;
+    m_addBtn = ui->m_addBtn;
+    m_modifyBtn = ui->m_modifyBtn;
+    m_deleteBtn = ui->m_deleteBtn;
+    m_dateEdit = ui->m_dateEdit;
+    m_queryDayBtn = ui->m_queryDayBtn;
+    m_queryMonthBtn = ui->m_queryMonthBtn;
+    m_taskTable = ui->m_taskTable;
 
+    // 初始化业务对象
     m_accountMgr = new AccountManager("data");
     m_taskMgr = new TaskManager("data");
 
-    m_stackedWidget = new QStackedWidget(this);
-    setCentralWidget(m_stackedWidget);
+    // 设置默认显示登录页
+    m_stackedWidget->setCurrentWidget(ui->m_loginPage);
 
-    setupLoginPage();
-    setupMainPage();
+    // 连接信号槽
+    connect(m_loginBtn, &QPushButton::clicked, this, &MainWindow::onLoginClicked);
+    connect(m_registerBtn, &QPushButton::clicked, this, &MainWindow::onRegisterClicked);
+    connect(m_logoutBtn, &QPushButton::clicked, this, &MainWindow::onLogoutClicked);
+    connect(m_addBtn, &QPushButton::clicked, this, &MainWindow::onAddTaskClicked);
+    connect(m_modifyBtn, &QPushButton::clicked, this, &MainWindow::onModifyTaskClicked);
+    connect(m_deleteBtn, &QPushButton::clicked, this, &MainWindow::onDeleteTaskClicked);
+    connect(m_queryDayBtn, &QPushButton::clicked, this, &MainWindow::onQueryDayClicked);
+    connect(m_queryMonthBtn, &QPushButton::clicked, this, &MainWindow::onQueryMonthClicked);
 
-    m_stackedWidget->setCurrentWidget(m_loginPage);
-
+    // 启动提醒线程
     m_reminderThread = new ReminderThread(nullptr, this);
     connect(m_reminderThread, &ReminderThread::remind, this, &MainWindow::showReminder);
     m_reminderThread->start();
 }
 
-//退出程序 
 MainWindow::~MainWindow()
 {
     if (m_reminderThread) {
@@ -48,119 +74,7 @@ MainWindow::~MainWindow()
     delete ui;
 }
 
-//登陆/注册页
-void MainWindow::setupLoginPage()
-{
-    m_loginPage = new QWidget;
-    QVBoxLayout *vbox = new QVBoxLayout(m_loginPage);
-    vbox->addStretch();
-
-    QFormLayout *form = new QFormLayout;
-    m_usernameEdit = new QLineEdit;
-    m_usernameEdit->setPlaceholderText("请输入用户名");
-    m_passwordEdit = new QLineEdit;
-    m_passwordEdit->setEchoMode(QLineEdit::Password);
-    m_passwordEdit->setPlaceholderText("请输入密码");
-    form->addRow("用户名:", m_usernameEdit);
-    form->addRow("密码:", m_passwordEdit);
-
-    QHBoxLayout *btnLayout = new QHBoxLayout;
-    m_loginBtn = new QPushButton("登录");
-    m_registerBtn = new QPushButton("注册");
-    btnLayout->addWidget(m_loginBtn);
-    btnLayout->addWidget(m_registerBtn);
-
-    m_loginStatus = new QLabel;
-    m_loginStatus->setStyleSheet("color: red;");
-
-    vbox->addLayout(form);
-    vbox->addLayout(btnLayout);
-    vbox->addWidget(m_loginStatus, 0, Qt::AlignCenter);
-    vbox->addStretch();
-
-    connect(m_loginBtn, &QPushButton::clicked, this, &MainWindow::onLoginClicked);
-    connect(m_registerBtn, &QPushButton::clicked, this, &MainWindow::onRegisterClicked);
-
-    m_stackedWidget->addWidget(m_loginPage);
-}
-
-//主页
-void MainWindow::setupMainPage()
-{
-    m_mainPage = new QWidget;
-    QVBoxLayout *mainLayout = new QVBoxLayout(m_mainPage);
-
-    QHBoxLayout *topLayout = new QHBoxLayout;
-    m_userLabel = new QLabel;
-    m_logoutBtn = new QPushButton("退出登录");
-    topLayout->addWidget(m_userLabel);
-    topLayout->addStretch();
-    topLayout->addWidget(m_logoutBtn);
-    mainLayout->addLayout(topLayout);
-    connect(m_logoutBtn, &QPushButton::clicked, this, &MainWindow::onLogoutClicked);
-
-    QGroupBox *addGroup = new QGroupBox("新增任务");
-    QFormLayout *addForm = new QFormLayout(addGroup);
-    m_taskNameEdit = new QLineEdit;
-    m_taskNameEdit->setPlaceholderText("任务名称");
-    m_startTimeEdit = new QDateTimeEdit(QDateTime::currentDateTime());
-    m_startTimeEdit->setDisplayFormat("yyyy-MM-dd HH:mm");
-    m_remindTimeEdit = new QDateTimeEdit(QDateTime::currentDateTime());
-    m_remindTimeEdit->setDisplayFormat("yyyy-MM-dd HH:mm");
-    m_priorityCombo = new QComboBox;
-    m_priorityCombo->addItems({"低", "中", "高"});
-    m_priorityCombo->setCurrentIndex(1); // 默认中
-    m_categoryCombo = new QComboBox;
-    m_categoryCombo->addItems({"学习", "娱乐", "生活"});
-    m_categoryCombo->setCurrentIndex(2); // 默认生活
-    m_addBtn = new QPushButton("添加任务");
-    m_modifyBtn = new QPushButton("修改选中任务");
-    m_deleteBtn = new QPushButton("删除选中任务");
-
-    addForm->addRow("名称:", m_taskNameEdit);
-    addForm->addRow("启动时间:", m_startTimeEdit);
-    addForm->addRow("提醒时间:", m_remindTimeEdit);
-    addForm->addRow("优先级:", m_priorityCombo);
-    addForm->addRow("分类:", m_categoryCombo);
-    QHBoxLayout *btnLayout = new QHBoxLayout;
-    btnLayout->addWidget(m_addBtn);
-    btnLayout->addWidget(m_modifyBtn);
-    btnLayout->addWidget(m_deleteBtn);
-    addForm->addRow(btnLayout);
-    mainLayout->addWidget(addGroup);
-
-    connect(m_addBtn, &QPushButton::clicked, this, &MainWindow::onAddTaskClicked);
-    connect(m_modifyBtn, &QPushButton::clicked, this, &MainWindow::onModifyTaskClicked);
-    connect(m_deleteBtn, &QPushButton::clicked, this, &MainWindow::onDeleteTaskClicked);
-
-    QGroupBox *queryGroup = new QGroupBox("查询任务");
-    QHBoxLayout *queryLayout = new QHBoxLayout(queryGroup);
-    m_dateEdit = new QDateEdit(QDate::currentDate());
-    m_dateEdit->setCalendarPopup(true);
-    m_dateEdit->setDisplayFormat("yyyy-MM-dd");
-    m_queryDayBtn = new QPushButton("查询当天");
-    m_queryMonthBtn = new QPushButton("查询当月");
-    queryLayout->addWidget(m_dateEdit);
-    queryLayout->addWidget(m_queryDayBtn);
-    queryLayout->addWidget(m_queryMonthBtn);
-    mainLayout->addWidget(queryGroup);
-
-    connect(m_queryDayBtn, &QPushButton::clicked, this, &MainWindow::onQueryDayClicked);
-    connect(m_queryMonthBtn, &QPushButton::clicked, this, &MainWindow::onQueryMonthClicked);
-
-    m_taskTable = new QTableWidget;
-    m_taskTable->setColumnCount(6);
-    m_taskTable->setHorizontalHeaderLabels({"ID", "名称", "开始时间", "优先级", "分类", "提醒时间"});
-    m_taskTable->horizontalHeader()->setStretchLastSection(true);
-    m_taskTable->setSelectionBehavior(QAbstractItemView::SelectRows);
-    m_taskTable->setEditTriggers(QAbstractItemView::NoEditTriggers);
-    mainLayout->addWidget(m_taskTable);
-
-    m_stackedWidget->addWidget(m_mainPage);
-}
-
-
-//登陆/注册页
+// 登录
 void MainWindow::onLoginClicked()
 {
     QString user = m_usernameEdit->text().trimmed();
@@ -177,6 +91,7 @@ void MainWindow::onLoginClicked()
     }
 }
 
+// 注册
 void MainWindow::onRegisterClicked()
 {
     QString user = m_usernameEdit->text().trimmed();
@@ -193,7 +108,7 @@ void MainWindow::onRegisterClicked()
     }
 }
 
-//退出登录
+// 退出登录
 void MainWindow::onLogoutClicked()
 {
     if (m_reminderThread) {
@@ -203,26 +118,24 @@ void MainWindow::onLogoutClicked()
     }
     m_currentUser.clear();
     m_taskMgr->setCurrentUser("");
-    m_stackedWidget->setCurrentWidget(m_loginPage);
+    m_stackedWidget->setCurrentWidget(ui->m_loginPage);
     m_usernameEdit->clear();
     m_passwordEdit->clear();
     m_loginStatus->clear();
 
-    // 重新启动提醒线程，无用户不检查
     m_reminderThread = new ReminderThread(nullptr, this);
     connect(m_reminderThread, &ReminderThread::remind, this, &MainWindow::showReminder);
     m_reminderThread->start();
 }
 
-//进入主界面
+// 切换到主页面
 void MainWindow::switchToMainPage(const QString &username)
 {
     m_currentUser = username;
     m_userLabel->setText("当前用户: " + username);
     m_taskMgr->loadTasks(username);
-    m_stackedWidget->setCurrentWidget(m_mainPage);
+    m_stackedWidget->setCurrentWidget(ui->m_mainPage);
 
-    // 重新设置提醒线程
     if (m_reminderThread) {
         m_reminderThread->stop();
         m_reminderThread->quit();
@@ -233,14 +146,10 @@ void MainWindow::switchToMainPage(const QString &username)
     connect(m_reminderThread, &ReminderThread::remind, this, &MainWindow::showReminder);
     m_reminderThread->start();
 
-    // 默认显示今天任务
     loadTableForDate(QDate::currentDate());
 }
 
-
-
-//主页
-// 添加任务：从界面控件读取数据，构建Task对象，调用TaskManager
+// 添加任务
 void MainWindow::onAddTaskClicked()
 {
     if (m_currentUser.isEmpty()) return;
@@ -251,7 +160,6 @@ void MainWindow::onAddTaskClicked()
         QMessageBox::warning(this, "错误", "任务名称不能为空");
         return;
     }
-    // 从控件取时间，截断秒数只保留到分钟（作业要求精确到分钟）
     QDateTime rawStart = m_startTimeEdit->dateTime();
     task.startTime = QDateTime(rawStart.date(),
                      QTime(rawStart.time().hour(), rawStart.time().minute()));
@@ -266,13 +174,11 @@ void MainWindow::onAddTaskClicked()
         loadTableForDate(m_dateEdit->date());
     } else {
         QMessageBox::warning(this, "错误",
-            "添加失败：任务的开始时间不能与其他任务相同，且任务名称+开始时间必须唯一");
+            "添加失败：任务的开始时间不能与其他任务相同，任务名称+开始时间必须唯一");
     }
 }
 
-<<<<<<< HEAD
-//删除任务：未实现🔴
-// 修改任务：第一次点击把选中行数据回填到输入框，第二次点击保存修改
+// 修改任务
 void MainWindow::onModifyTaskClicked()
 {
     int row = m_taskTable->currentRow();
@@ -282,7 +188,6 @@ void MainWindow::onModifyTaskClicked()
     }
     int id = m_taskTable->item(row, 0)->text().toInt();
 
-    // 没在修改状态 → 回填输入框
     if (m_editingId != id) {
         m_editingId = id;
         m_modifyBtn->setText("保存修改");
@@ -297,7 +202,6 @@ void MainWindow::onModifyTaskClicked()
         return;
     }
 
-    // 已在修改状态 → 保存
     Task newData;
     newData.id       = id;
     newData.name     = m_taskNameEdit->text().trimmed();
@@ -325,9 +229,7 @@ void MainWindow::onModifyTaskClicked()
     }
 }
 
-=======
->>>>>>> 592b668 (添加测试程序及音乐提醒功能)
-// 删除任务：获取表格选中行的任务ID，调用TaskManager删除
+// 删除任务
 void MainWindow::onDeleteTaskClicked()
 {
     int row = m_taskTable->currentRow();
@@ -354,12 +256,9 @@ void MainWindow::onQueryMonthClicked()
     loadTableForMonth(d.year(), d.month());
 }
 
-//提醒接收
-// 显示提醒弹窗（由ReminderThread的信号触发）
+// 显示提醒
 void MainWindow::showReminder(const QString &taskName, const QString &timeStr)
 {
-        // 播放提醒音（异步播放，不阻塞 UI）
-    // 使用完整路径，确保不管从哪个目录启动都能找到
     QString soundPath = QCoreApplication::applicationDirPath() + "/../sounds/remind.wav";
     PlaySound((LPCWSTR)soundPath.utf16(), NULL, SND_FILENAME | SND_ASYNC | SND_NODEFAULT);
 
@@ -367,12 +266,7 @@ void MainWindow::showReminder(const QString &taskName, const QString &timeStr)
         QString("任务「%1」将在 %2 开始，请做好准备！").arg(taskName, timeStr));
 }
 
-
-// ============================================================
-// 以下为内部辅助函数 — 表格填充与输入清空
-// ============================================================
-
-// 按日期查询并填充任务表格（调用TaskManager::tasksForDate）
+// 加载当天任务到表格
 void MainWindow::loadTableForDate(const QDate &date)
 {
     QVector<Task> tasks = m_taskMgr->tasksForDate(date);
@@ -389,7 +283,7 @@ void MainWindow::loadTableForDate(const QDate &date)
     }
 }
 
-// 按月份查询并填充任务表格（调用TaskManager::tasksForMonth）
+// 加载当月任务到表格
 void MainWindow::loadTableForMonth(int year, int month)
 {
     QVector<Task> tasks = m_taskMgr->tasksForMonth(year, month);
@@ -406,7 +300,7 @@ void MainWindow::loadTableForMonth(int year, int month)
     }
 }
 
-// 清空任务录入表单，恢复到默认值
+// 清空输入框
 void MainWindow::clearTaskInput()
 {
     m_taskNameEdit->clear();

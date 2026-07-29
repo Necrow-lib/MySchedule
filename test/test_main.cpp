@@ -11,9 +11,7 @@
 #include "TaskManager.h"
 #include "Task.h"
 
-// ============================================================
-// 测试类 — TaskTest：测试 Task 数据结构的序列化
-// ============================================================
+
 class TaskTest : public QObject {
     Q_OBJECT
 
@@ -62,9 +60,6 @@ void TaskTest::testEnumConversions()
     QCOMPARE(parseCategory("生活"), Category::Life);
 }
 
-// ============================================================
-// 测试类 — AccountManagerTest：测试用户注册和登录
-// ============================================================
 class AccountManagerTest : public QObject {
     Q_OBJECT
 
@@ -104,9 +99,6 @@ void AccountManagerTest::testWrongPassword()
     QVERIFY(!mgr.login("charlie", "wrongpw"));
 }
 
-// ============================================================
-// 测试类 — TaskManagerTest：测试任务的增删查和冲突检测
-// ============================================================
 class TaskManagerTest : public QObject {
     Q_OBJECT
 
@@ -147,9 +139,8 @@ void TaskManagerTest::testAddAndFindTask()
     t.category = Category::Entertainment;
 
     QVERIFY(m_mgr->addTask(t));
-    QVERIFY(m_mgr->nextId() > 1);   // ID 自动递增
+    QVERIFY(m_mgr->nextId() > 1);  
 
-    // 查找刚添加的任务
     Task *found = m_mgr->findTask(1);
     QVERIFY(found != nullptr);
     QCOMPARE(found->name, QString("单元测试任务"));
@@ -157,10 +148,9 @@ void TaskManagerTest::testAddAndFindTask()
 
 void TaskManagerTest::testTimeConflict()
 {
-    // 相同开始时间 → 应该失败
     Task t;
     t.name = "冲突任务";
-    t.startTime = QDateTime(QDate(2026, 2, 1), QTime(9, 0));  // 与上一个任务同一时间
+    t.startTime = QDateTime(QDate(2026, 2, 1), QTime(9, 0));
     t.priority = Priority::Low;
     t.category = Category::Life;
 
@@ -169,10 +159,10 @@ void TaskManagerTest::testTimeConflict()
 
 void TaskManagerTest::testNameTimeConflict()
 {
-    // 名称+开始时间都与第一个任务完全一致 → 应该失败
+
     Task t;
-    t.name = "单元测试任务";              // 与第一个任务同名
-    t.startTime = QDateTime(QDate(2026, 2, 1), QTime(9, 0));  // 与第一个任务同时
+    t.name = "单元测试任务";
+    t.startTime = QDateTime(QDate(2026, 2, 1), QTime(9, 0));
     t.priority = Priority::High;
     t.category = Category::Study;
 
@@ -181,7 +171,6 @@ void TaskManagerTest::testNameTimeConflict()
 
 void TaskManagerTest::testRemoveTask()
 {
-    // 先添加一个可删除的任务
     Task t;
     t.name = "待删除任务";
     t.startTime = QDateTime(QDate(2026, 3, 1), QTime(14, 0));
@@ -189,16 +178,14 @@ void TaskManagerTest::testRemoveTask()
 
     int lastId = m_mgr->nextId() - 1;
     QVERIFY(m_mgr->removeTask(lastId));
-    QVERIFY(m_mgr->findTask(lastId) == nullptr);  // 删除后应找不到
+    QVERIFY(m_mgr->findTask(lastId) == nullptr);
 
-    // 再次删除应该失败
     QVERIFY(!m_mgr->removeTask(lastId));
 }
 
 void TaskManagerTest::testTasksForDate()
 {
-    // 清除，仅保留第一个任务（2026-02-01）
-    // loadTasks 会清空内存，用新用户确保干净
+
     TaskManager mgr(m_tempDir.path());
     mgr.loadTasks("dateuser");
 
@@ -219,7 +206,7 @@ void TaskManagerTest::testTasksForDate()
 
     QVector<Task> dayTasks = mgr.tasksForDate(QDate(2026, 4, 10));
     QCOMPARE(dayTasks.size(), 2);
-    // 验证按时间升序
+
     QVERIFY(dayTasks[0].startTime < dayTasks[1].startTime);
 }
 
@@ -228,7 +215,6 @@ void TaskManagerTest::testTasksForMonth()
     TaskManager mgr(m_tempDir.path());
     mgr.loadTasks("monthuser");
 
-    // 添加多个月份的任务
     Task t1;
     t1.name = "二月任务";
     t1.startTime = QDateTime(QDate(2026, 2, 15), QTime(12, 0));
@@ -253,9 +239,6 @@ void TaskManagerTest::testTasksForMonth()
     QCOMPARE(febTasks.size(), 1);
 }
 
-// ============================================================
-// 主函数 — 手动组合所有测试类
-// ============================================================
 int main(int argc, char *argv[])
 {
     QCoreApplication app(argc, argv);
