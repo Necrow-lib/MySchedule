@@ -7,9 +7,9 @@ set(CMAKE_AUTOMOC ON)
 set(CMAKE_AUTORCC ON)
 set(CMAKE_AUTOUIC ON)
 
-find_package(Qt6 COMPONENTS Widgets Core QUIET)
+find_package(Qt6 COMPONENTS Widgets Core Multimedia QUIET)
 if(NOT Qt6_FOUND)
-    find_package(Qt5 5.15 REQUIRED COMPONENTS Widgets Core)
+    find_package(Qt5 5.15 REQUIRED COMPONENTS Widgets Core Multimedia)
 endif()
 
 set(SOURCES
@@ -34,7 +34,7 @@ set(FORMS
 )
 
 add_executable(${PROJECT_NAME} ${SOURCES} ${HEADERS} ${FORMS})
-target_link_libraries(${PROJECT_NAME} Qt::Widgets Qt::Core winmm)
+target_link_libraries(${PROJECT_NAME} Qt::Widgets Qt::Core Qt::Multimedia)
 
 option(BUILD_TESTS "Build the test executables" ON)
 if(BUILD_TESTS)

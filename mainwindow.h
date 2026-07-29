@@ -1,7 +1,7 @@
 #ifndef MAINWINDOW_H
 #define MAINWINDOW_H
 
-#include <windows.h>
+
 #include <QMainWindow>
 #include <QStackedWidget>
 #include <QLineEdit>
@@ -11,6 +11,7 @@
 #include <QDateTimeEdit>
 #include <QComboBox>
 #include <QTableWidget>
+#include <QSoundEffect>
 
 #include "AccountManager.h"
 #include "TaskManager.h"
@@ -66,6 +67,7 @@ private:
     AccountManager *m_accountMgr;
     TaskManager *m_taskMgr;
     ReminderThread *m_reminderThread;
+    QSoundEffect *m_soundEffect;
     QString m_currentUser;
     int m_editingId = -1;
 

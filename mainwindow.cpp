@@ -58,6 +58,12 @@ MainWindow::MainWindow(QWidget *parent)
     connect(m_queryDayBtn, &QPushButton::clicked, this, &MainWindow::onQueryDayClicked);
     connect(m_queryMonthBtn, &QPushButton::clicked, this, &MainWindow::onQueryMonthClicked);
 
+        // 初始化跨平台音效
+    m_soundEffect = new QSoundEffect(this);
+    m_soundEffect->setSource(QUrl::fromLocalFile(
+        QCoreApplication::applicationDirPath() + "/../sounds/remind.wav"));
+    m_soundEffect->setVolume(1.0);
+
     // 启动提醒线程
     m_reminderThread = new ReminderThread(nullptr, this);
     connect(m_reminderThread, &ReminderThread::remind, this, &MainWindow::showReminder);
@@ -66,11 +72,12 @@ MainWindow::MainWindow(QWidget *parent)
 
 MainWindow::~MainWindow()
 {
-    if (m_reminderThread) {
+        if (m_reminderThread) {
         m_reminderThread->stop();
         m_reminderThread->quit();
         m_reminderThread->wait();
     }
+    delete m_soundEffect;
     delete ui;
 }
 
@@ -259,8 +266,9 @@ void MainWindow::onQueryMonthClicked()
 // 显示提醒
 void MainWindow::showReminder(const QString &taskName, const QString &timeStr)
 {
-    QString soundPath = QCoreApplication::applicationDirPath() + "/../sounds/remind.wav";
-    PlaySound((LPCWSTR)soundPath.utf16(), NULL, SND_FILENAME | SND_ASYNC | SND_NODEFAULT);
+    if (m_soundEffect->status() == QSoundEffect::Loaded) {
+        m_soundEffect->play();
+    }
 
     QMessageBox::information(this, "任务提醒",
         QString("任务「%1」将在 %2 开始，请做好准备！").arg(taskName, timeStr));
