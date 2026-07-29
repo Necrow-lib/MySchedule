@@ -266,7 +266,7 @@ void MainWindow::onQueryMonthClicked()
 // 显示提醒
 void MainWindow::showReminder(const QString &taskName, const QString &timeStr)
 {
-    if (m_soundEffect->status() == QSoundEffect::Loaded) {
+    if (m_soundEffect->status() == QSoundEffect::Ready) {
         m_soundEffect->play();
     }
 
