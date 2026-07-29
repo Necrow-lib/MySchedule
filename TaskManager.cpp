@@ -99,8 +99,12 @@ void TaskManager::saveTasks() {
 // 作业要求：每个任务的开始时间不能相同（精确到分钟）
 bool TaskManager::hasTimeConflict(const Task &task, int excludeId) const {
     for (const auto &t : m_tasks) {
-        if (t.id == excludeId) continue;                            // 跳过自身
-        if (t.startTime == task.startTime) return true;             // 时间冲突
+        if (t.id == excludeId) continue;
+
+        if (t.startTime.toString("yyyy-MM-dd HH:mm")
+                == task.startTime.toString("yyyy-MM-dd HH:mm")) {
+            return true;
+        }
     }
     return false;
 }
